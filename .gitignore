@@ -2,7 +2,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
-.DS_Store
 
 # C extensions
 *.so
@@ -10,6 +9,7 @@ __pycache__/
 # Distribution / packaging
 .idea
 .Python
+env/
 build/
 develop-eggs/
 dist/
@@ -103,6 +103,9 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
+# SageMath parsed files
+*.sage.py
+
 # Environments
 .env
 .venv
@@ -111,6 +114,9 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+pyvenv.cfg
+bin/
+pip-selfcheck.json
 
 # Spyder project settings
 .spyderproject
@@ -129,3 +135,20 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Google
+/client_secrets.json
+*credentials*.json
+
+#Mac OS X
+.DS_Store
+
+# Databricks
+.databricks
+typings/
