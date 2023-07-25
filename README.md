@@ -1,7 +1,14 @@
-![image](https://raw.githubusercontent.com/databricks-industry-solutions/.github/main/profile/solacc_logo_wide.png)
+![banner](https://raw.githubusercontent.com/vinoaj/databricks-resources/main/assets/img/banner-databricks-rec-ws.png)
 
 [![CLOUD](https://img.shields.io/badge/CLOUD-ALL-blue?logo=googlecloud&style=for-the-badge)](https://cloud.google.com/databricks)
-[![POC](https://img.shields.io/badge/POC-10_days-green?style=for-the-badge)](https://databricks.com/try-databricks)
+<!-- [![POC](https://img.shields.io/badge/POC-10_days-green?style=for-the-badge)](https://databricks.com/try-databricks) -->
+
+## Resources
+
+- [Solution Accelerators: Recommendation Engines for Personalisation](https://www.databricks.com/solutions/accelerators/recommendation-engines)
+- Matrix Factorisation / Alternating Least Squares: [Blog](https://www.databricks.com/blog/2023/01/06/products-we-think-you-might-generating-personalized-recommendations.html) | [Notebooks](https://notebooks.databricks.com/notebooks/RCG/als-recommender/index.html#als-recommender_1.html) | [GitHub](https://github.com/databricks-industry-solutions/als-recommender)
+
+--
 
 ## Business Problem
 <List of the business use case the solution accelerator address>
