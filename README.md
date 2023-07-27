@@ -11,6 +11,18 @@
 
 - Ensure you have access to a schema (database) that you can create tables on. It's preferable for a standalone schema for this workshop.
 
+### Cluster
+
+- You will require a cluster with the following specifications:
+  - Access mode: Assigned
+  - Single user: Your user ID
+  - Databricks runtime version: `13.2 ML (Scala 2.12, Spark 3.4.0)`
+  - Worker type: `XXXX`
+    - Min workers: `1`
+    - Max workers: `8`
+    - Use spot/preemptible: `yes`
+  - Driver type: `XXXX`
+
 ## Resources
 
 - [Solution Accelerators: Recommendation Engines for Personalisation](https://www.databricks.com/solutions/accelerators/recommendation-engines)
