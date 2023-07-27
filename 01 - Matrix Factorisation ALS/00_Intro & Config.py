@@ -17,13 +17,28 @@
 
 # COMMAND ----------
 
-# MAGIC %md ## Configuration Settings
+username = (dbutils.notebook.entry_point.getDbutils()
+            .notebook().getContext()
+            .userName().get())
+
+print(f"Your username: {username}")
 
 # COMMAND ----------
 
-CATALOG = ""
-SCHEMA = ""
+# MAGIC %md 
+# MAGIC ## Configuration Settings
+# MAGIC
+# MAGIC - [View available catalogs](/explore/data)
 
+# COMMAND ----------
+
+# Catalog and schema (database) where you'll be writing your data
+CATALOG = "vinny_vijeyakumaar"
+CATALOG_FALLBACK = "hive_metastore"
+SCHEMA = "recommendation_workshop"
+
+# Temporary location to store the downloaded Instacart data
+MOUNT_POINT = "/tmp/instacart"
 
 # COMMAND ----------
 
@@ -31,27 +46,54 @@ SCHEMA = ""
 if 'config' not in locals().keys():
   config = {}
 
+config["catalog"] = CATALOG
+config["schema"] = SCHEMA
+
 # COMMAND ----------
 
-config['catalog'] = CATALOG
+from pyspark.sql.utils import AnalysisException
+
+target_catalog = config["catalog"]
+
+try:
+    # Set the catalog to the desired catalog
+    spark.sql(f"USE CATALOG {target_catalog}")
+except AnalysisException as e:
+    # If the catalog doesn't exist, fallback to the Hive metastore
+    if "not found" in str(e):
+        print(f"Target catalog not found. Falling back on {CATALOG_FALLBACK}")
+        spark.sql(f"USE CATALOG {CATALOG_FALLBACK}")
+        config["catalog"] = CATALOG_FALLBACK
+    else:
+        raise e
+
+print(f'Using Catalog: {config["catalog"]}')
 
 # COMMAND ----------
 
-_ = spark.sql("USE CATALOG xyz")
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {config['schema']}")
+spark.sql(f"USE SCHEMA {config['schema']}")
+
+print(f'Using Schema: {config["schema"]}')
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC SHOW CURRENT SCHEMA;
 
 # COMMAND ----------
 
 # DBTITLE 1,Identify Database
-config['database'] = 'als'
+# config['database'] = 'als'
 
 # COMMAND ----------
 
 # DBTITLE 1,Create & Set Current Database
 # create database if not exists
-_ = spark.sql('create database if not exists {0}'.format(config['database']))
+# _ = spark.sql('create database if not exists {0}'.format(config['database']))
 
 # set current database context
-_ = spark.catalog.setCurrentDatabase(config['database'])
+# _ = spark.catalog.setCurrentDatabase(config['database'])
 
 # COMMAND ----------
 
@@ -59,17 +101,14 @@ _ = spark.catalog.setCurrentDatabase(config['database'])
 
 # COMMAND ----------
 
-# DBTITLE 1,Identify Mount Point
-config['mount_point'] = '/tmp/instacart_als'
+# DBTITLE 1,Define paths to data files
+config['mount_point'] = MOUNT_POINT
 
-# COMMAND ----------
-
-# DBTITLE 1,Define Paths to Data Files
-config['products_path'] = config['mount_point'] + '/bronze/products'
-config['orders_path'] = config['mount_point'] + '/bronze/orders'
-config['order_products_path'] = config['mount_point'] + '/bronze/order_products'
-config['aisles_path'] = config['mount_point'] + '/bronze/aisles'
-config['departments_path'] = config['mount_point'] + '/bronze/departments'
+config['products_path']         = f"{MOUNT_POINT}/bronze/products"
+config['orders_path']           = f"{MOUNT_POINT}/bronze/orders"
+config['order_products_path']   = f"{MOUNT_POINT}/bronze/order_products"
+config['aisles_path']           = f"{MOUNT_POINT}/bronze/aisles"
+config['departments_path']      = f"{MOUNT_POINT}/bronze/departments"
 
 # COMMAND ----------
 
@@ -80,9 +119,8 @@ config['model name'] = 'als'
 
 # DBTITLE 1,Set mlflow experiment
 import mlflow
-username = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
 mlflow.set_experiment('/Users/{}/als-recommender'.format(username))
 
 # COMMAND ----------
 
-# MAGIC %md © 2022 Databricks, Inc. All rights reserved. The source in this notebook is provided subject to the Databricks License.
+# MAGIC %md © 2023 Databricks, Inc. All rights reserved. The source in this notebook is provided subject to the Databricks License.
