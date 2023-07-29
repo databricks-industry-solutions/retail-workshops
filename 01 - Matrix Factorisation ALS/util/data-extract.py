@@ -46,9 +46,13 @@ os.environ['kaggle_key'] = "49065f69581ab6e9b938d3d331db1447" # 'YOUR KAGGLE KEY
 # COMMAND ----------
 
 dbutils.fs.rm(f"dbfs:{config['mount_point']}", True)
-dbutils.fs.mv("file:/databricks/driver/aisles.csv", f"dbfs:{config['mount_point']}/bronze/aisles/aisles.csv")
-dbutils.fs.mv("file:/databricks/driver/departments.csv", f"dbfs:{config['mount_point']}/bronze/departments/departments.csv")
-dbutils.fs.mv("file:/databricks/driver/order_products__prior.csv", f"dbfs:{config['mount_point']}/bronze/order_products/order_products__prior.csv")
-dbutils.fs.mv("file:/databricks/driver/order_products__train.csv", f"dbfs:{config['mount_point']}/bronze/order_products/order_products__train.csv")
-dbutils.fs.mv("file:/databricks/driver/orders.csv", f"dbfs:{config['mount_point']}/bronze/orders/orders.csv")
-dbutils.fs.mv("file:/databricks/driver/products.csv", f"dbfs:{config['mount_point']}/bronze/products/products.csv")
+dbutils.fs.mv("file:/databricks/driver/aisles.csv", f"dbfs:{config['aisles_path']}/aisles.csv")
+dbutils.fs.mv("file:/databricks/driver/departments.csv", f"dbfs:{config['departments_path']}/departments.csv")
+dbutils.fs.mv("file:/databricks/driver/order_products__prior.csv", f"dbfs:{config['order_products_path']}/order_products__prior.csv")
+dbutils.fs.mv("file:/databricks/driver/order_products__train.csv", f"dbfs:{config['order_products_path']}/order_products__train.csv")
+dbutils.fs.mv("file:/databricks/driver/orders.csv", f"dbfs:{config['orders_path']}/orders.csv")
+dbutils.fs.mv("file:/databricks/driver/products.csv", f"dbfs:{config['products_path']}/products.csv")
+
+# COMMAND ----------
+
+

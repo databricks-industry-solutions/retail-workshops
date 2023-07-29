@@ -119,7 +119,7 @@ config['model name'] = 'als'
 
 # DBTITLE 1,Set mlflow experiment
 import mlflow
-mlflow.set_experiment('/Users/{}/als-recommender'.format(username))
+mlflow.set_experiment(f'/Users/{username}/als-recommender')
 
 # COMMAND ----------
 
