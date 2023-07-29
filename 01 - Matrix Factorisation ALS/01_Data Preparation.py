@@ -309,55 +309,59 @@ displayHTML(get_profile(df_combined))
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC DROP VIEW IF EXISTS user_product_purchases;
+# MAGIC -- DROP VIEW IF EXISTS user_product_purchases;
 # MAGIC
-# MAGIC CREATE VIEW user_product_purchases
-# MAGIC AS
-# MAGIC   SELECT
-# MAGIC     monotonically_increasing_id() as row_id,
-# MAGIC     x.user_id,
-# MAGIC     x.product_id,
-# MAGIC     x.product_purchases / y.purchase_events as rating
-# MAGIC   FROM (  -- product purchases
-# MAGIC     SELECT
-# MAGIC       a.user_id,
-# MAGIC       b.product_id,
-# MAGIC       COUNT(*) as product_purchases
-# MAGIC     FROM orders a
-# MAGIC     INNER JOIN order_products b
-# MAGIC       ON a.order_id=b.order_id
-# MAGIC     INNER JOIN products c
-# MAGIC       ON b.product_id=c.product_id
-# MAGIC     GROUP BY a.user_id, b.product_id
-# MAGIC     ) x 
-# MAGIC   INNER JOIN ( -- purchase events
-# MAGIC     SELECT 
-# MAGIC       user_id, 
-# MAGIC       COUNT(DISTINCT order_id) as purchase_events 
-# MAGIC     FROM orders 
-# MAGIC     GROUP BY user_id
-# MAGIC     ) y
-# MAGIC     ON x.user_id=y.user_id
-# MAGIC     ;
+# MAGIC -- CREATE VIEW user_product_purchases
+# MAGIC -- AS
+# MAGIC --   SELECT
+# MAGIC --     monotonically_increasing_id() as row_id,
+# MAGIC --     x.user_id,
+# MAGIC --     x.product_id,
+# MAGIC --     x.product_purchases / y.purchase_events as rating
+# MAGIC --   FROM (  -- product purchases
+# MAGIC --     SELECT
+# MAGIC --       a.user_id,
+# MAGIC --       b.product_id,
+# MAGIC --       COUNT(*) as product_purchases
+# MAGIC --     FROM orders a
+# MAGIC --     INNER JOIN order_products b
+# MAGIC --       ON a.order_id=b.order_id
+# MAGIC --     INNER JOIN products c
+# MAGIC --       ON b.product_id=c.product_id
+# MAGIC --     GROUP BY a.user_id, b.product_id
+# MAGIC --     ) x 
+# MAGIC --   INNER JOIN ( -- purchase events
+# MAGIC --     SELECT 
+# MAGIC --       user_id, 
+# MAGIC --       COUNT(DISTINCT order_id) as purchase_events 
+# MAGIC --     FROM orders 
+# MAGIC --     GROUP BY user_id
+# MAGIC --     ) y
+# MAGIC --     ON x.user_id=y.user_id
+# MAGIC --     ;
 # MAGIC     
-# MAGIC SELECT *
-# MAGIC FROM user_product_purchases;
+# MAGIC -- SELECT *
+# MAGIC -- FROM user_product_purchases;
 
 # COMMAND ----------
 
 # MAGIC %sql
+# MAGIC DROP VIEW IF EXISTS user_product_purchases;
+# MAGIC
+# MAGIC CREATE VIEW user_product_purchases
+# MAGIC AS
 # MAGIC WITH product_purchases AS (
 # MAGIC   SELECT
-# MAGIC     a.user_id,
-# MAGIC     b.product_id,
+# MAGIC     o.user_id,
+# MAGIC     op.product_id,
 # MAGIC     -- How many times this customer ordered this product
 # MAGIC     COUNT(*) as product_purchases
-# MAGIC   FROM orders a
-# MAGIC   INNER JOIN order_products b
-# MAGIC     ON a.order_id=b.order_id
-# MAGIC   INNER JOIN products c
-# MAGIC     ON b.product_id=c.product_id
-# MAGIC   GROUP BY a.user_id, b.product_id
+# MAGIC   FROM orders o
+# MAGIC   INNER JOIN order_products op
+# MAGIC     ON o.order_id=op.order_id
+# MAGIC   INNER JOIN products p
+# MAGIC     ON op.product_id=p.product_id
+# MAGIC   GROUP BY o.user_id, op.product_id
 # MAGIC ),
 # MAGIC purchase_events AS (
 # MAGIC   SELECT 
@@ -375,6 +379,7 @@ displayHTML(get_profile(df_combined))
 # MAGIC FROM product_purchases as pp
 # MAGIC INNER JOIN purchase_events as pe
 # MAGIC   ON pp.user_id=pe.user_id;
+# MAGIC
 
 # COMMAND ----------
 
