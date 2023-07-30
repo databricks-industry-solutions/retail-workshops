@@ -157,6 +157,19 @@ write_data( aisles, '{0}.aisles'.format(config['schema']))
 # MAGIC - Remember, the association between these tables are as follows
 # MAGIC
 # MAGIC <img src='https://brysmiwasb.blob.core.windows.net/demos/images/instacart_schema2.png' width=300>
+# MAGIC
+# MAGIC For an effective matrix factorisation model we require a robust and informative **user-item** matrix, where each entry represents:
+# MAGIC - A user's interaction with an item (e.g. a rating, a purchase)
+# MAGIC - Ideally we have **explicit** interactions where the user has knowingly and willingly scored an item. This could include leaving a star rating, a review, etc. In the context of retail, a **purchase** of an item can be considered an explicit approval of that item
+# MAGIC 	- However, in the context of grocery items, this is rare. The incentive to leave a rating for a $1 snack is low compared to leaving a review for a $2000 TV
+# MAGIC - In scenarios where explicit ratings are rare, we instead have to build out proxy **implicit** ratings
+# MAGIC - In retail, implicit ratings could be:
+# MAGIC 	- Pageviews of a product
+# MAGIC 	- Dwell time on the product details page
+# MAGIC 	- How many times a product is viewed across the customer's browsing history
+# MAGIC 	- Whether an item was added to the cart
+# MAGIC 	- How frequently a product is reordered by a customer
+# MAGIC 	- The number of times a product was searched for
 
 # COMMAND ----------
 
@@ -357,15 +370,12 @@ displayHTML(get_profile(df_combined))
 # MAGIC     -- How many times this customer ordered this product
 # MAGIC     COUNT(*) as product_purchases
 # MAGIC   FROM orders o
-# MAGIC   INNER JOIN order_products op
-# MAGIC     ON o.order_id=op.order_id
-# MAGIC   INNER JOIN products p
-# MAGIC     ON op.product_id=p.product_id
+# MAGIC   INNER JOIN order_products op ON o.order_id=op.order_id
+# MAGIC   INNER JOIN products p ON op.product_id=p.product_id
 # MAGIC   GROUP BY o.user_id, op.product_id
 # MAGIC ),
 # MAGIC purchase_events AS (
-# MAGIC   SELECT 
-# MAGIC     user_id, 
+# MAGIC   SELECT user_id, 
 # MAGIC     COUNT(DISTINCT order_id) as purchase_events 
 # MAGIC   FROM orders 
 # MAGIC   GROUP BY user_id
