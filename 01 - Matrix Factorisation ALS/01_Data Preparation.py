@@ -1,14 +1,6 @@
 # Databricks notebook source
 # MAGIC %md 
-# MAGIC You may find this series of notebooks at https://github.com/databricks-industry-solutions/als-recommender. For more information about this solution accelerator, visit https://www.databricks.com/solutions/accelerators/recommendation-engines
-
-# COMMAND ----------
-
-# MAGIC %md The purpose of this notebook is to prepare the data for use in the ALS recommender. 
-
-# COMMAND ----------
-
-# MAGIC %md ## Introduction
+# MAGIC # Data Preparation & Exploration
 # MAGIC
 # MAGIC In this notebook, we will make accessible purchase history data which will be used as the basis for the construction of a matrix factorization recommender.  The dataset we will use is the [Instacart dataset](https://www.kaggle.com/c/instacart-market-basket-analysis), downloadable from the Kaggle website. We will make the data available through a set of queryable tables and then derive implied ratings from the data before proceeding to the next notebook.
 
@@ -30,7 +22,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install -q ydata-profiling==4.0.0
+# MAGIC %pip install -q ydata-profiling #==4.0.0
 
 # COMMAND ----------
 
@@ -90,7 +82,7 @@ orders_schema = StructType([
   ])
 
 orders = read_data(config['orders_path'], orders_schema)
-write_data( orders, '{0}.orders'.format(config['schema']))
+write_data(orders, '{0}.orders'.format(config['schema']))
 # ---------------------------------------------------------
 
 # products
@@ -103,7 +95,7 @@ products_schema = StructType([
   ])
 
 products = read_data( config['products_path'], products_schema)
-write_data( products, '{0}.products'.format(config['schema']))
+write_data(products, '{0}.products'.format(config['schema']))
 # ---------------------------------------------------------
 
 # order products
@@ -116,7 +108,7 @@ order_products_schema = StructType([
   ])
 
 order_products = read_data( config['order_products_path'], order_products_schema)
-write_data( order_products, '{0}.order_products'.format(config['schema']))
+write_data(order_products, '{0}.order_products'.format(config['schema']))
 # ---------------------------------------------------------
 
 # departments
@@ -127,7 +119,7 @@ departments_schema = StructType([
   ])
 
 departments = read_data( config['departments_path'], departments_schema)
-write_data( departments, '{0}.departments'.format(config['schema']))
+write_data(departments, '{0}.departments'.format(config['schema']))
 # ---------------------------------------------------------
 
 # aisles
@@ -138,7 +130,7 @@ aisles_schema = StructType([
   ])
 
 aisles = read_data( config['aisles_path'], aisles_schema)
-write_data( aisles, '{0}.aisles'.format(config['schema']))
+write_data(aisles, '{0}.aisles'.format(config['schema']))
 # ---------------------------------------------------------
 
 # COMMAND ----------
@@ -376,20 +368,26 @@ displayHTML(get_profile(df_combined))
 # MAGIC ),
 # MAGIC purchase_events AS (
 # MAGIC   SELECT user_id, 
+# MAGIC     -- Number of unique orders per customer
 # MAGIC     COUNT(DISTINCT order_id) as purchase_events 
 # MAGIC   FROM orders 
 # MAGIC   GROUP BY user_id
 # MAGIC )
 # MAGIC SELECT
-# MAGIC   monotonically_increasing_id() as row_id,
+# MAGIC   MONTONICALLY_INCREASING_ID() as row_id,
 # MAGIC   pp.user_id,
 # MAGIC   pp.product_id,
-# MAGIC   -- Proxy rating based on how often a specific customer purchases a specific product
+# MAGIC   -- Proxy rating based on how often a specific customer purchases/reorders a specific product
 # MAGIC   pp.product_purchases / pe.purchase_events as rating
 # MAGIC FROM product_purchases as pp
 # MAGIC INNER JOIN purchase_events as pe
 # MAGIC   ON pp.user_id=pe.user_id;
 # MAGIC
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC SELECT * FROM user_product_purchases;
 
 # COMMAND ----------
 
