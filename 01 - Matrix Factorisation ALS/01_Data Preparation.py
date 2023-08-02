@@ -298,6 +298,13 @@ displayHTML(get_profile(df_combined))
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC # Classroom Exercise
+# MAGIC
+# MAGIC **Question**: Given this data, what sort of implicit ratings could we derive from them?
+
+# COMMAND ----------
+
 # MAGIC %md 
 # MAGIC # Step 2: Generate Ratings
 # MAGIC
