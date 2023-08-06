@@ -2,7 +2,10 @@
 # MAGIC %md 
 # MAGIC # Data Preparation & Exploration
 # MAGIC
-# MAGIC In this notebook, we will make accessible purchase history data which will be used as the basis for the construction of a matrix factorization recommender.  The dataset we will use is the [Instacart dataset](https://www.kaggle.com/c/instacart-market-basket-analysis), downloadable from the Kaggle website. We will make the data available through a set of queryable tables and then derive implied ratings from the data before proceeding to the next notebook.
+# MAGIC - In this notebook, we will make accessible purchase history data which will be used as the basis for the construction of a matrix factorization recommender.  
+# MAGIC - The dataset we will use is the [Instacart dataset](https://www.kaggle.com/c/instacart-market-basket-analysis), downloadable from the Kaggle website. 
+# MAGIC - [Instacart](https://www.instacart.com/store) is a grocery delivery service that services customers across the United States of America and Canada
+# MAGIC - We will make the data available through a set of queryable tables and then derive implied ratings from the data before proceeding to the next notebook.
 
 # COMMAND ----------
 
@@ -22,7 +25,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install -q ydata-profiling #==4.0.0
+# MAGIC %pip install -q ydata-profiling
 
 # COMMAND ----------
 
@@ -40,7 +43,6 @@ import pyspark.sql.functions as fn
 from pyspark.sql import window as w
 
 from ydata_profiling import ProfileReport
-# from ydata_profiling.visualisation.plot import timeseries_heatmap
 
 # COMMAND ----------
 
@@ -64,6 +66,7 @@ def write_data(df, table_name):
 
 # COMMAND ----------
 
+# DBTITLE 1,The Instacart dataset sits as a series of CSV files in DBFS
 display(dbutils.fs.ls(f'{config["mount_point"]}/bronze/aisles'))
 
 # COMMAND ----------
@@ -165,7 +168,18 @@ write_data(aisles, '{0}.aisles'.format(config['schema']))
 
 # COMMAND ----------
 
+# DBTITLE 1,Profiling function
 def get_profile(df, timeseries_mode=False):
+    """
+    Get a HTML report of the data profile of a DataFrame
+
+    Args:
+        df: The input DataFrame to profile.
+        timeseries_mode (bool): If True, generates a report for time series data using ydata-profiling's time series analysis mode
+        
+    Returns:
+        str: An HTML report of the data profile of the input DataFrame
+    """
     df_profile = ProfileReport(df, minimal=True, 
                                title="Profiling Report", 
                                correlations={
@@ -174,11 +188,55 @@ def get_profile(df, timeseries_mode=False):
                                 "spearman": {"calculate": True}
                                },
                                tsmode=timeseries_mode
-                               # progress_bar=False, 
-                               # infer_dtypes=False
+                               # progress_bar=False
                                )
+    
     profile_html = df_profile.to_html()
     return profile_html
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## orders
+# MAGIC
+# MAGIC - This data represents 3.4M orders and their metadata, feature engineered from their raw dataset
+# MAGIC - This includes:
+# MAGIC   - User ID per order
+# MAGIC   - Which order occurence (e.g. 3rd order, 5th order) it is for the customer
+# MAGIC   - Order day of week
+# MAGIC   - Order hour of day
+# MAGIC   - How long it has been, in days, since the customer's previous order
+# MAGIC - These are useful signals for identifying:
+# MAGIC   - Customer's lifetime order history
+# MAGIC   - Customer's recency & frequency
+# MAGIC   - Day and time orders are typically made
+# MAGIC   - When applied to a SKU-level, it can help reveal patterns around product popularity and order frequency
+
+# COMMAND ----------
+
+df_orders = spark.sql("SELECT * FROM orders").cache()
+display(df_orders)
+displayHTML(get_profile(df_orders))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## order_products
+# MAGIC
+# MAGIC - This data reflects: 
+# MAGIC   - which products make up an individual order
+# MAGIC   - what order the product was added to the cart in
+# MAGIC   - whether a product was a re-order (i.e. customer purchased it before)
+# MAGIC - There are roughly 3.3M orders
+# MAGIC - These are useful signals for:
+# MAGIC   - Identifying products that are commonly ordered together
+# MAGIC   - Identifying popular products for a customer (reflected by re-ordering a product)
+
+# COMMAND ----------
+
+df_order_products = spark.sql("SELECT * FROM order_products").cache()
+display(df_order_products)
+displayHTML(get_profile(df_order_products))
 
 # COMMAND ----------
 
@@ -209,50 +267,6 @@ displayHTML(get_profile(df_aisles))
 df_departments = spark.sql("SELECT * FROM departments").cache()
 display(df_departments)
 displayHTML(get_profile(df_departments))
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## order_products
-# MAGIC
-# MAGIC - This data reflects: 
-# MAGIC   - which products make up an individual order
-# MAGIC   - what order the product was added to the cart in
-# MAGIC   - whether a product was a re-order (i.e. customer purchased it before)
-# MAGIC - There are roughly 3.3M orders
-# MAGIC - These are useful signals for:
-# MAGIC   - Identifying products that are commonly ordered together
-# MAGIC   - Identifying popular products for a customer (reflected by re-ordering a product)
-
-# COMMAND ----------
-
-df_order_products = spark.sql("SELECT * FROM order_products").cache()
-display(df_order_products)
-displayHTML(get_profile(df_order_products))
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## orders
-# MAGIC
-# MAGIC - This data represents 3.4M orders and their metadata, feature engineered from their raw dataset
-# MAGIC - This includes:
-# MAGIC   - User ID per order
-# MAGIC   - Which order occurence (e.g. 3rd order, 5th order) it is for the customer
-# MAGIC   - Order day of week
-# MAGIC   - Order hour of day
-# MAGIC   - How long it has been, in days, since the customer's previous order
-# MAGIC - These are useful signals for identifying:
-# MAGIC   - Customer's lifetime order history
-# MAGIC   - Customer's recency & frequency
-# MAGIC   - Day and time orders are typically made
-# MAGIC   - When applied to a SKU-level, it can help reveal patterns around product popularity and order frequency
-
-# COMMAND ----------
-
-df_orders = spark.sql("SELECT * FROM orders").cache()
-display(df_orders)
-displayHTML(get_profile(df_orders))
 
 # COMMAND ----------
 
