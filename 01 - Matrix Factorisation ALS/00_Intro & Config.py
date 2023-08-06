@@ -1,19 +1,10 @@
 # Databricks notebook source
-# MAGIC %md The purpose of this notebook is to introduce the ALS recommender solution accelerator and to provide access to configuration information for the notebooks supporting it.
-
-# COMMAND ----------
-
-# MAGIC %md ## Introduction
+# MAGIC %md
+# MAGIC # Configuration Parameters
 # MAGIC
-# MAGIC Recommender systems are becoming increasing important as companies seek better ways to select products to present to end users. In this solution accelerator, we will explore a form of collaborative filter referred to as a matrix factorization.  
+# MAGIC This Notebook is used to manage your configuration parameters and keep them consistent as we run the subsequent Notebooks in these labs
 # MAGIC
-# MAGIC Matrix factorization works by assembling a set of ratings for various products made by a set of users.  The large user x products matrix is decomposed into smaller user and product submatrices associated with some developer-specified number of latent factors.  In many ways, a matrix factorization is a dimension reduction technique but one where missing values in the original matrix are allowed.
-# MAGIC
-# MAGIC When examining ratings for a large number of user and product combinations, most users will engage with a very smaller percentage of products.  This causes us to have a user x products matrix that is highly sparse. When we decompose this matrix into the submatrices, the two can be combined to *recreate* the original matrix in a manner that provides ratings estimates for all products, including those a user has not yet engaged.  This ability to fill-in the missing ratings forms the basis for recommending new products to a user.
-# MAGIC
-# MAGIC Matrix factorization recommenders are frequently used in scenarios where we wish to suggest new and repeat purchase items to a user.  *People like you also bought ...*, *Products we think you'll like ...*, and *Based on your purchase history ...* styled recommendations are frequently delivered through this type of recommender.
-# MAGIC
-# MAGIC The challenge in developing a matrix factorization recommender is the large amount of computational horsepower required to calculate the submatrices.  Alternating Least Squares (ALS) is one approach that decomposes the process into a series of incremental steps that can be implemented in a distributed manner. In this solution accelerator, we will train and deploy an ALS-based matrix factorization recommender using the ALS capabilities in Apache Spark to demonstrate how this is done.
+# MAGIC This only needs to be edited once
 
 # COMMAND ----------
 
@@ -34,6 +25,7 @@ print(f"Your username: {username}")
 
 # Catalog and schema (database) where you'll be writing your data
 CATALOG = "vinny_vijeyakumaar"
+# Use hive_metastore if Unity Catalog is unavailable for this workspace
 CATALOG_FALLBACK = "hive_metastore"
 SCHEMA = "recommendation_workshop"
 
@@ -78,22 +70,7 @@ print(f'Using Schema: {config["schema"]}')
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC SHOW CURRENT SCHEMA;
-
-# COMMAND ----------
-
-# DBTITLE 1,Identify Database
-# config['database'] = 'als'
-
-# COMMAND ----------
-
-# DBTITLE 1,Create & Set Current Database
-# create database if not exists
-# _ = spark.sql('create database if not exists {0}'.format(config['database']))
-
-# set current database context
-# _ = spark.catalog.setCurrentDatabase(config['database'])
+# MAGIC %sql SHOW CURRENT SCHEMA;
 
 # COMMAND ----------
 
@@ -113,13 +90,27 @@ config['departments_path']      = f"{MOUNT_POINT}/bronze/departments"
 # COMMAND ----------
 
 # DBTITLE 1,Model Info
-config['model name'] = 'als'
+config['model_name'] = 'als'
 
 # COMMAND ----------
 
-# DBTITLE 1,Set mlflow experiment
+# DBTITLE 1,Set MLflow experiment
 import mlflow
-mlflow.set_experiment(f'/Users/{username}/als-recommender')
+
+experiment_name = f"/Users/{username}/als-recommender"
+
+# mlflow.set_experiment(experiment_name) sets the active experiment for all runs 
+# within the current notebook to experiment_name. It creates the experiment if it 
+# does not exist. This means that all logged runs within the notebook after 
+# calling mlflow.set_experiment() will be associated with the specified experiment. 
+# You can then view the results for this experiment in the MLflow Experiment UI
+mlflow.set_experiment(experiment_name)
+
+experiment_id = mlflow.get_experiment_by_name(experiment_name).experiment_id
+experiment_url = f"/#mlflow/experiments/{experiment_id}"
+
+print(f"MLflow experiment name set to: {experiment_name}")
+displayHTML(f'<a href="{experiment_url}" target="_blank">Link to Experiment UI</a>')
 
 # COMMAND ----------
 
