@@ -1,16 +1,12 @@
 # Databricks notebook source
 # MAGIC %md 
-# MAGIC You may find this series of notebooks at https://github.com/databricks-industry-solutions/als-recommender. For more information about this solution accelerator, visit https://www.databricks.com/solutions/accelerators/recommendation-engines
-
-# COMMAND ----------
-
-# MAGIC %md The purpose of this notebook is to train the ALS recommender. 
-
-# COMMAND ----------
-
-# MAGIC %md ## Introduction
+# MAGIC # Training a Matrix Factorisation Recommender
 # MAGIC
-# MAGIC In this notebook, we'll train a matrix factorization recommender using the  Alternating Least Squares (ALS) algorithm built into Spark. We'll start by working through the mechanics of model training and evaluation, pivot into a hyperparameter tuning exercise and then train a final model using optimized parameter settings. 
+# MAGIC In this notebook, we'll:
+# MAGIC - train a matrix factorization recommender using the  Alternating Least Squares (ALS) algorithm built into Spark
+# MAGIC - work through the mechanics of model training and evaluation
+# MAGIC - conduct a hyperparameter tuning exercise
+# MAGIC - train a final model using optimized parameter settings
 
 # COMMAND ----------
 
@@ -20,19 +16,17 @@
 # COMMAND ----------
 
 # DBTITLE 1,Import Required Libraries
-from pyspark.ml.evaluation import RegressionEvaluator, RankingEvaluator
-from pyspark.ml.recommendation import ALS
-
 import mlflow
-
-from hyperopt import fmin, tpe, hp, STATUS_OK, Trials, space_eval
 import numpy as np
-
 import pyspark.sql.window as w
 import pyspark.sql.functions as fn
+import random
+
+from hyperopt import fmin, tpe, hp, STATUS_OK, Trials, space_eval
+from pyspark.ml.evaluation import RegressionEvaluator, RankingEvaluator
+from pyspark.ml.recommendation import ALS
 from pyspark.sql.types import *
 
-import random
 
 # COMMAND ----------
 
@@ -103,6 +97,11 @@ model = als.fit(ratings_sampled_train)
 # COMMAND ----------
 
 # MAGIC %md Using our model, we can get predictions for our testing set as follows:
+
+# COMMAND ----------
+
+# DBTITLE 1,View our test dataset
+display(ratings_sampled_test)
 
 # COMMAND ----------
 
@@ -291,7 +290,7 @@ eval.evaluate( predicted.join(actuals, on='user_id') )
 search_space = {
   'regParam': hp.uniform('regParam', 0.01, 0.5),
   'alpha':hp.uniform('alpha', 1.0, 10.0)
-  }
+}
 
 # COMMAND ----------
 
@@ -302,7 +301,7 @@ search_space = {
 # COMMAND ----------
 
 # DBTITLE 1,Define Evaluation Function for Tuning Trials
-# define model to evaluate hyperparameter values
+# Define model to evaluate hyperparameter values
 def evaluate(params):
   
   # clean up params
@@ -311,7 +310,7 @@ def evaluate(params):
   
   with mlflow.start_run(nested=True):
     
-    # instantiate model
+    # Instantiate model
     als = ALS(
       rank=100,
       maxIter=20,
@@ -324,10 +323,10 @@ def evaluate(params):
       **params
       )
     
-    # train model
+    # Train model
     model = als.fit(ratings_sampled_train)
     
-    # generate recommendations
+    # Generate recommendations
     predicted = (
       model
         .recommendForAllUsers(k)
@@ -341,7 +340,7 @@ def evaluate(params):
         .withColumn('prediction', fn.col('recs').cast('array<double>'))
       )
     
-    # score the model 
+    # Score the model 
     eval = RankingEvaluator( 
       predictionCol='prediction',
       labelCol='label',
@@ -350,7 +349,7 @@ def evaluate(params):
       )
     mapk = eval.evaluate( predicted.join(actuals, on='user_id') )
     
-    # log parameters & metrics
+    # Log parameters & metrics
     mlflow.log_params(params)
     mlflow.log_metrics( {'map@k':mapk} )
     
@@ -489,7 +488,7 @@ with mlflow.start_run(run_name='als_full_model'):
   # log model details
   mlflow.log_params(params)
   mlflow.log_metrics( {'map@k':mapk} )
-  mlflow.spark.log_model(model, artifact_path='model', registered_model_name=config['model name'])
+  mlflow.spark.log_model(model, artifact_path='model', registered_model_name=config['model_name'])
 
 # COMMAND ----------
 
@@ -502,7 +501,7 @@ with mlflow.start_run(run_name='als_full_model'):
 client = mlflow.tracking.MlflowClient()
 
 # identify model version in registry
-model_version = client.search_model_versions(f"name='{config['model name']}'")[0].version
+model_version = client.search_model_versions(f"name='{config['model_name']}'")[0].version
 
 model_version
 

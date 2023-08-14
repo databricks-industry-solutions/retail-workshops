@@ -1,19 +1,11 @@
 # Databricks notebook source
 # MAGIC %md 
-# MAGIC You may find this series of notebooks at https://github.com/databricks-industry-solutions/als-recommender. For more information about this solution accelerator, visit https://www.databricks.com/solutions/accelerators/recommendation-engines
-
-# COMMAND ----------
-
-# MAGIC %md The purpose of this notebook is to deploy the ALS recommender. 
-
-# COMMAND ----------
-
-# MAGIC %md ##Introduction
-# MAGIC 
+# MAGIC # Deploying our model
+# MAGIC
 # MAGIC With our model trained, it's now time to examine how it will be deployed to support the delivery of product recommendations to users. The typical pattern of deployment is to train the model and then generate recommendations for each user which are then persisted for fast retrieval. </p>
-# MAGIC 
+# MAGIC
 # MAGIC <img src='https://brysmiwasb.blob.core.windows.net/demos/images/als_model_deployment.png' width=500>
-# MAGIC 
+# MAGIC
 # MAGIC In examining this pattern, it's important to remember the ALS *model* is fundamentally two lower-ranked matrices, one focused on users and the other focused on products/items, that are brought together to estimate *ratings*. These matrices don't make for the kind of high-speed predictions we'd want in an online scenario.  Furthermore, if any of the input data changes, both matrices must be recomputed in full.  This leads naturally to a pattern of training followed by immediate generation of the full output set on a periodic basis.
 
 # COMMAND ----------
@@ -25,15 +17,13 @@
 
 # DBTITLE 1,Import Required Libraries
 import mlflow
-
-import pyspark.sql.functions as fn
-
 import pandas as pd
+import pyspark.sql.functions as fn
 
 # COMMAND ----------
 
 # MAGIC %md ##Step 1: Move Model to Production
-# MAGIC 
+# MAGIC
 # MAGIC In our last notebook, we persisted our model to mlflow.  Given the discussion above, it's reasonable to define a workflow where the model is trained and immediately used to generate recommendation output in a manner that doesn't require you to retrieve the model from the mlflow registry as an intermediary step.  But because we have separated this pattern into two discrete steps with mlflow in the middle, we will now demonstrate how to retrieve the model from the registry:
 
 # COMMAND ----------
@@ -43,7 +33,7 @@ import pandas as pd
 client = mlflow.tracking.MlflowClient()
 
 # identify model version in registry
-latest_model_info = client.search_model_versions(f"name='{config['model name']}'")[0]
+latest_model_info = client.search_model_versions(f"name='{config['model_name']}'")[0]
 model_version = latest_model_info.version
 model_status = latest_model_info.current_stage
 
@@ -52,7 +42,7 @@ model_status = latest_model_info.current_stage
 # DBTITLE 1,Elevate to Production
 if model_status.lower() != 'production':
   client.transition_model_version_stage(
-    name=config['model name'],
+    name=config['model_name'],
     version=model_version,
     stage='production'
     ) 
@@ -61,7 +51,7 @@ if model_status.lower() != 'production':
 
 # DBTITLE 1,Retrieve Latest Production Model
 # load latest production model
-retrieved_model = mlflow.spark.load_model(f"models:/{config['model name']}/production")
+retrieved_model = mlflow.spark.load_model(f"models:/{config['model_name']}/production")
 
 # COMMAND ----------
 
@@ -70,9 +60,9 @@ retrieved_model = mlflow.spark.load_model(f"models:/{config['model name']}/produ
 # COMMAND ----------
 
 # MAGIC %md ##Step 2: Generate Recommendations
-# MAGIC 
+# MAGIC
 # MAGIC The Spark model retrieved from mlflow has been persisted as an MLLib pipeline.  A pipeline consists of one or more stages where data is passed from stage to stage in order to arrive at an output.  This approach allows models retrieved from mlflow to have a standard API and allows data transformation logic to be coupled with model prediction capabilities.  The downside of this approach is that our particular model's API which features a number of very useful methods for the generation of recommendations are a little more difficult to access.
-# MAGIC 
+# MAGIC
 # MAGIC To see this pipeline structure, let's examine the *stages* associated with our retrieved model:
 
 # COMMAND ----------
@@ -94,12 +84,12 @@ original_model = retrieved_model.stages[0]
 # COMMAND ----------
 
 # MAGIC %md We now have a couple paths for the generation of recommendations, but before jumping into the mechanics of how we might do this, it's important to carefully think through how our recommendations will be used as this will guide us in terms of how we might implement the following.
-# MAGIC 
+# MAGIC
 # MAGIC One strategy for generating recommendations is just to grab an exhaustive list of products, sorted based on preference, for each user.  This is conceptually simple but it will take quite a bit of time and/or computational resources to complete.  If our goal is to generate email marketing, we might limit our recommendations to just those products that are relevant to the campaigns we wish to run, dramatically reducing the number of items we need to score for each user.  Similarly, if our goal is to populate a landing page for a product category, we might score just the products in that category in order to serve that goal.  If we are making more general recommendations, such as a *based on your previous purchases* style of recommendation, we might be open to all products regardless of category but limit the results to the top *number* of products based on how that data would be displayed.  The bottom line here is that we want to be thoughtful in how we approach the challenge of making recommendations as this will save us time and money down the road.
-# MAGIC 
-# MAGIC 
+# MAGIC
+# MAGIC
 # MAGIC With that in mind, let's look at how we might generate recommendations for products in a particular department. 
-# MAGIC 
+# MAGIC
 # MAGIC The pipeline retrieved directly from mlflow exposes a *transform* methods which allows us to submit users and products to be scored.  We can generate recommendations from it doing something like this:
 
 # COMMAND ----------
@@ -199,7 +189,7 @@ print(
 # COMMAND ----------
 
 # MAGIC %md The *recommendForAllItems* and *recommendForItemSubset* methods return some specified number of users with the highest preference for either all items in the training dataset or just the subset of items supplied, respectively.  The *recommendForAllUsers* and *recommendForUserSubset* methods do the opposite, returning some specified number of highest preferred products for each user.  These methods can be very useful in specific scenarios such as identifying which customers to target with item-specific messaging or which limited number of products to position with users.
-# MAGIC 
+# MAGIC
 # MAGIC The predictions returned by these method calls are organized as an ordered array of struct values, each of which contains the item/product id and its rating.  If you wish to use these methods to generate recommendations, you may wish to use strip the rating value from the predictions to just hold on to the item/product ids.  A pandas UDF such as the one below may be helpful in accomplishing this:
 
 # COMMAND ----------
@@ -230,17 +220,17 @@ def remove_ratings(data: pd.Series) -> pd.Series:
 # COMMAND ----------
 
 # MAGIC %md ##Step 3: Publish Recommendations
-# MAGIC 
+# MAGIC
 # MAGIC With our recommendations generated, we now need to publish them for use in downstream systems. Popular systems for the publication of these data include:
 # MAGIC </p>
-# MAGIC 
+# MAGIC
 # MAGIC * Redis
 # MAGIC * Azure Cosmos DB
 # MAGIC * Mongo DB
 # MAGIC * Couchbase
 # MAGIC * Elasticsearch
 # MAGIC </p>
-# MAGIC 
+# MAGIC
 # MAGIC Each of these systems has their own connectors and requirements for publication.  You can use the [following resource](https://docs.databricks.com/external-data/index.html#what-data-services-does-databricks-integrate-with) as a starting point for exploring how to publish data to these systems.
 
 # COMMAND ----------
@@ -249,4 +239,4 @@ def remove_ratings(data: pd.Series) -> pd.Series:
 
 # COMMAND ----------
 
-# MAGIC %md © 2022 Databricks, Inc. All rights reserved. The source in this notebook is provided subject to the Databricks License.
+# MAGIC %md © 2023 Databricks, Inc. All rights reserved. The source in this notebook is provided subject to the Databricks License.

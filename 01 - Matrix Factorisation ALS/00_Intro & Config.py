@@ -70,7 +70,8 @@ print(f'Using Schema: {config["schema"]}')
 
 # COMMAND ----------
 
-# MAGIC %sql SHOW CURRENT SCHEMA;
+# MAGIC %sql 
+# MAGIC SELECT CURRENT_CATALOG() AS current_catalog, CURRENT_SCHEMA() AS current_schema;
 
 # COMMAND ----------
 
